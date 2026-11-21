@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>snip, Level 1</title>
+<style>
+/* === KIT START (css) ===
+   Teach-back component kit. Copy this block and the js kit block unchanged into later levels.
+   Markup patterns:
+   .page > nav.rail + main ; main > header.top, section.sec[data-sec][id] ; section ends with p.next
+   .card[data-card] (.predict | .why | .say) : .q, textarea.mine OR fieldset.picks, button.show, .answer[hidden]
+   .answer > .echo, .ans-body, .rate (button[data-rate]) ; .last = earlier answer from localStorage
+   span.term[tabindex=0][role=button] > span.def ; code.src = path:line chip ; span.era
+   .pipeline > .stepper[hidden] (svg g.step, .cap, .count, buttons) + ol.steps (fallback list)
+   details.words (words you will meet) ; .priv (private-only box) ; p.progress + .bar > i ; details.key
+   body[data-course] sets the localStorage prefix. */
+:root {
+  --bg: #f6f3ec; --surface: #fcfaf5; --surface-2: #ebe6dc;
+  --ink: #23211d; --ink-2: #5a554c;
+  --line: #ddd6c9; --line-strong: #8c8577;
+  --accent: #0f5f66; --accent-ink: #ffffff; --accent-soft: #d8ebe9;
+  --warn: #8a4a00; --warn-soft: #f5e6cf; --ok: #256b3c;
+  --code-bg: #ece7dd; --focus: #0a4fb3;
+  --font-body: "Avenir Next", Avenir, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --measure: 32em; --strong: 600;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #191816; --surface: #21201d; --surface-2: #2b2925;
+    --ink: #e7e3da; --ink-2: #aaa497;
+    --line: #35322d; --line-strong: #7d776b;
+    --accent: #6cc5c8; --accent-ink: #06262a; --accent-soft: #1b3838;
+    --warn: #eeb06a; --warn-soft: #3a2c18; --ok: #74cc92;
+    --code-bg: #292723; --focus: #8ab8ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #191816; --surface: #21201d; --surface-2: #2b2925;
+  --ink: #e7e3da; --ink-2: #aaa497;
+  --line: #35322d; --line-strong: #7d776b;
+  --accent: #6cc5c8; --accent-ink: #06262a; --accent-soft: #1b3838;
+  --warn: #eeb06a; --warn-soft: #3a2c18; --ok: #74cc92;
+  --code-bg: #292723; --focus: #8ab8ff;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+a { color: var(--accent); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* layout */
+.page {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr);
+  column-gap: 44px;
+  max-width: 1020px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { min-width: 0; max-width: 66ch; padding-bottom: 80px; }
+.rail {
+  position: sticky; top: 0; align-self: start;
+  max-height: 100vh; overflow-y: auto;
+  padding: 28px 0 24px;
+}
+.rail-title { margin: 0 0 10px; font: 500 .75rem/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.rail ol { list-style: none; margin: 0; padding: 0; }
+.rail a {
+  display: grid; grid-template-columns: 18px 1fr auto; align-items: baseline; gap: 8px;
+  padding: 6px 8px 6px 0; text-decoration: none; color: var(--ink-2);
+  border-left: 3px solid transparent; padding-left: 8px; font-size: .9375rem; line-height: 1.35;
+}
+.rail a:hover { color: var(--ink); }
+.rail a[aria-current="true"] { color: var(--ink); border-left-color: var(--accent); background: var(--surface-2); }
+.rail .rm { font: 400 .75rem/1 var(--font-mono); color: var(--ink-2); }
+.tick {
+  display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line-strong); border-radius: 50%;
+  position: relative; top: 2px;
+}
+.is-done > .tick, a.is-done .tick { background: var(--ok); border-color: var(--ok); }
+.is-done > .tick::after, a.is-done .tick::after {
+  content: ""; position: absolute; left: 3px; top: 0; width: 3px; height: 7px;
+  border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(40deg);
+}
+@media (max-width: 860px) {
+  .page { display: block; }
+  .rail {
+    position: sticky; top: 0; z-index: 10; max-height: none; overflow: visible;
+    padding: 8px 0; background: var(--bg); border-bottom: 1px solid var(--line);
+  }
+  .rail-title { display: none; }
+  .rail ol { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+  .rail li { flex: 0 0 auto; }
+  .rail a { grid-template-columns: 18px auto auto; border-left: 0; border-bottom: 3px solid transparent; padding: 4px 8px; font-size: .875rem; white-space: nowrap; }
+  .rail a[aria-current="true"] { border-bottom-color: var(--accent); }
+}
+
+/* header */
+.top { padding: 36px 0 8px; }
+.kicker { font: 500 .8125rem/1.2 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
+h1 { font-size: clamp(1.875rem, 6vw, 2.625rem); line-height: 1.1; margin: 0 0 14px; letter-spacing: -.01em; }
+.lede { font-size: 1.05em; margin: 0 0 12px; }
+.meta { color: var(--ink-2); font-size: .9375rem; margin: 0 0 10px; }
+.next-action { border-top: 2px solid var(--accent); padding-top: 8px; margin: 18px 0 14px; font-weight: 700; }
+.progress { margin: 18px 0 6px; font: 500 .875rem/1.4 var(--font-mono); color: var(--ink-2); }
+.bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--ok); }
+.theme-btn {
+  float: right; font: 500 .75rem/1 var(--font-mono); padding: 7px 10px; background: transparent;
+  color: var(--ink-2); border: 1px solid var(--line-strong); border-radius: 4px; cursor: pointer; margin-top: 4px;
+}
+
+/* sections */
+.sec { padding-top: 44px; scroll-margin-top: 56px; }
+.sec-head { display: flex; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.sec-head h2 { font-size: 1.625rem; line-height: 1.2; margin: 0 0 8px; flex: 1 1 auto; }
+.sec-head .num { font: 500 .875rem/1 var(--font-mono); color: var(--accent); }
+.sec-head .tick { flex: 0 0 auto; }
+.sec p, .sec li { margin: 0 0 12px; }
+.sec ul, .sec ol { padding-left: 1.2em; margin: 0 0 12px; }
+.sec h3 { font-size: 1.125rem; margin: 22px 0 6px; }
+.next { margin-top: 18px; padding-left: 12px; border-left: 3px solid var(--accent); font-weight: 700; }
+
+/* citation chips and tags */
+code.src {
+  font-family: var(--font-mono); font-size: .72em; font-weight: 400; color: var(--ink-2);
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 3px;
+  padding: 1px 5px; margin: 0 1px; overflow-wrap: anywhere; line-height: 1.5;
+}
+code.cmd {
+  font-family: var(--font-mono); font-size: .86em; background: var(--code-bg);
+  border-radius: 3px; padding: 1px 5px; overflow-wrap: anywhere;
+}
+.era {
+  font: 500 .68em/1 var(--font-mono); letter-spacing: .04em; padding: 2px 5px; border-radius: 3px;
+  background: var(--accent-soft); color: var(--ink); border: 1px solid var(--accent); vertical-align: .1em;
+}
+.privtag {
+  font: 500 .72em/1 var(--font-mono); padding: 2px 5px; border-radius: 3px;
+  background: var(--warn); color: var(--bg);
+}
+
+/* inline terms */
+.term { border-bottom: 1px dotted var(--accent); cursor: help; }
+.term .def { color: var(--ink-2); }
+.js .term .def { display: none; }
+.js .term.open .def { display: inline; }
+.js .term { cursor: pointer; }
+
+/* words strip */
+details.words { border: 1px solid var(--line-strong); border-radius: 2px; margin: 22px 0 0; background: var(--surface); }
+details.words > summary { cursor: pointer; padding: 10px 14px; font: 500 .8125rem/1.3 var(--font-mono); letter-spacing: .05em; text-transform: uppercase; }
+.words-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+.words-grid > div { padding: 10px 14px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); font-size: 1rem; line-height: 1.45; }
+.words-grid b { display: block; font-family: var(--font-mono); font-size: .875rem; color: var(--accent); margin-bottom: 2px; }
+
+/* cards */
+.card { margin: 18px 0; background: var(--surface); padding: 14px 16px 16px; border: 1px solid var(--line); }
+.card .label { display: block; font: 500 .75rem/1 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.card .q { margin: 0 0 10px; font-weight: 700; }
+.card.predict { border-left: 5px solid var(--accent); }
+.card.why { border: 2px dashed var(--accent); }
+.card.say { padding: 0; border: 1px solid var(--accent); }
+.card.say .label { background: var(--accent); color: var(--accent-ink); margin: 0; padding: 8px 16px; }
+.card.say .say-body { padding: 14px 16px 16px; }
+.card textarea {
+  width: 100%; min-height: 76px; resize: vertical; font: inherit; font-size: max(1rem, 16px); line-height: 1.5;
+  color: var(--ink); background: var(--bg); border: 1px solid var(--line-strong); border-radius: 3px; padding: 8px 10px;
+}
+.picks { border: 0; margin: 0 0 4px; padding: 0; min-width: 0; }
+.picks legend { padding: 0; }
+.picks label { display: flex; gap: 10px; align-items: flex-start; padding: 7px 10px; margin: 0 0 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); cursor: pointer; }
+.picks input { margin-top: 5px; flex: 0 0 auto; }
+.btn, .card button {
+  font: 700 .9375rem/1 var(--font-body); padding: 11px 16px; min-height: 44px; border-radius: 3px; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+}
+.card button.ghost, .btn.ghost { background: transparent; color: var(--accent); }
+.card button[disabled], .btn[disabled] { opacity: .45; cursor: not-allowed; }
+.card .show { margin-top: 10px; }
+.card .last { margin: 8px 0 0; font-size: .9375rem; color: var(--ink-2); border-left: 3px solid var(--line-strong); padding-left: 10px; }
+.answer { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.answer .echo { margin: 0 0 10px; font-size: .9375rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.answer .echo b { color: var(--ink); }
+.answer .ans-body { margin: 0 0 10px; }
+.answer .ans-body p { margin: 0 0 8px; }
+.rate { display: flex; gap: 8px; flex-wrap: wrap; }
+.rate button[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: var(--bg); }
+.card[data-done] .label::after { content: " (done)"; color: var(--ok); }
+
+/* private box and key */
+.priv { background: var(--warn-soft); border-left: 5px solid var(--warn); padding: 12px 16px; margin: 18px 0; font-size: 1rem; }
+.priv p { margin: 0 0 8px; }
+.priv p:last-child { margin-bottom: 0; }
+details.key { border: 1px solid var(--line-strong); background: var(--surface); margin-top: 12px; }
+details.key > summary { cursor: pointer; padding: 12px 14px; font-weight: 700; }
+details.key .key-body { padding: 0 16px 8px; border-top: 1px solid var(--line); }
+details.key h3 { font: 500 .75rem/1.2 var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 16px 0 6px; }
+details.key p { margin: 0 0 8px; font-size: 1rem; }
+
+/* step-through pipeline */
+.pipeline { margin: 16px 0; }
+.stepper { border: 1px solid var(--line-strong); background: var(--surface); padding: 12px; }
+.stepper svg { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto 8px; }
+.stepper .count { font: 500 .8125rem/1 var(--font-mono); color: var(--accent); margin: 4px 0 6px; }
+.stepper .cap { min-height: 7.5em; font-size: 1rem; line-height: 1.5; margin: 0 0 10px; }
+.stepper .cap b { display: block; font-size: 1.05em; }
+.stepper .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.stepper .controls button { font: 700 .9375rem/1 var(--font-body); min-height: 44px; padding: 10px 16px; border-radius: 3px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+.stepper .controls button.ghost { background: transparent; color: var(--accent); }
+.stepper .controls button[disabled] { opacity: .4; cursor: not-allowed; }
+.stepper svg .box { fill: var(--surface); stroke: var(--line-strong); stroke-width: 1.5; }
+.stepper svg .badge { fill: var(--surface-2); stroke: var(--line-strong); stroke-width: 1.5; }
+.stepper svg .bnum { fill: var(--ink); font: 700 13px var(--font-body); text-anchor: middle; }
+.stepper svg .ttl { fill: var(--ink); font: 700 14px var(--font-body); }
+.stepper svg .sub { fill: var(--ink-2); font: 400 11.5px var(--font-body); }
+.stepper svg .link { stroke: var(--line-strong); stroke-width: 2; }
+.stepper svg g.step { opacity: .5; transition: opacity .2s; }
+.stepper svg g.step.on { opacity: 1; }
+.stepper svg g.step.on .box { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
+.stepper svg g.step.on .badge { fill: var(--accent); stroke: var(--accent); }
+.stepper svg g.step.on .bnum { fill: var(--accent-ink); }
+.steps { padding-left: 1.3em; }
+.steps li { margin-bottom: 12px; }
+.stepping .steps { display: none; }
+.stepping.show-all .steps { display: block; margin-top: 14px; }
+
+/* design: type + components */
+body { font-size: 1rem; line-height: 1.6; font-weight: 400; text-wrap: pretty; }
+main { max-width: var(--measure); }
+.page { max-width: 920px; column-gap: 56px; }
+@media (max-width: 860px) { main { margin: 0 auto; } }
+b, strong { font-weight: var(--strong); }
+h1 { font-size: clamp(1.575rem, 4.2vw, 2.1rem); line-height: 1.12; font-weight: 700; letter-spacing: -.015em; }
+.sec-head h2 { font-size: 1.4rem; line-height: 1.2; font-weight: 600; letter-spacing: -.01em; }
+.sec h3 { font-size: 1.05rem; line-height: 1.3; font-weight: 600; margin: 28px 0 6px; }
+.sec p, .sec li { margin: 0 0 .8em; }
+.lede { font-size: 1.08em; line-height: 1.5; }
+.meta, .answer .echo, .card .last { font-size: .9375rem; line-height: 1.5; }
+.kicker, .rail-title, .card .label, details.words > summary, details.key h3 {
+  font: 600 .78rem/1.2 var(--font-body); letter-spacing: .08em; text-transform: uppercase; }
+code.cmd { font-size: .84em; }
+code.src { font-size: .74em; }
+.card .q, .next-action, details.key > summary { font-weight: 600; }
+.btn, .card button, .stepper .controls button { font-weight: 600; }
+.stepper svg .bnum, .stepper svg .ttl { font-weight: 600; }
+.rail a[aria-current="true"] { background: none; }
+.rail a { font-size: .91rem; }
+.rail .rm { font: 400 .78rem/1 var(--font-body); }
+.progress { font: 400 .9375rem/1.4 var(--font-body); }
+.bar { height: 3px; }
+.theme-btn { border: 0; padding: 6px 0; font: 400 .8125rem/1 var(--font-body); text-decoration: underline; }
+/* text-size control (reader sets size; default = browser size) */
+.ctl { float: right; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 4px 16px; margin-top: 4px; max-width: 100%; }
+.ctl .theme-btn { float: none; margin-top: 0; }
+.size-ctl { display: inline-flex; align-items: baseline; gap: 10px; font: 400 .8125rem/1 var(--font-body); color: var(--ink-2); }
+.size-ctl button { border: 0; background: transparent; color: var(--ink-2); font: 400 .8125rem/1 var(--font-body); text-decoration: underline; padding: 6px 2px; min-width: 24px; cursor: pointer; }
+.size-ctl button:disabled { opacity: .4; cursor: default; text-decoration: none; }
+.size-ctl .size-now { white-space: nowrap; }
+details.words { border-color: var(--line); border-radius: 6px; }
+.words-grid { gap: 4px 0; }
+.words-grid > div { border: 0; }
+.words-grid b { font: 600 1rem/1.4 var(--font-body); color: var(--ink); }
+.card { border-radius: 6px; padding: 16px 18px 18px; margin: 22px 0; }
+.card.predict { border-left-width: 3px; }
+.card.why { border: 1px solid var(--line); border-left: 3px solid var(--accent); }
+.card.say { overflow: hidden; }
+.next { font-weight: 400; border-left: 1px solid var(--line-strong); margin-top: 24px; }
+.priv { border-left-width: 3px; border-radius: 0 6px 6px 0; }
+code.src { background: none; border: 0; padding: 0; margin: 0 .3em 0 0; }
+.era { background: var(--code-bg); border-color: var(--line); color: var(--ink-2); }
+.sec { padding-top: 72px; }
+.term { border-bottom-color: var(--line-strong); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+/* no-JS fallback: answers readable, buttons removed */
+/* === KIT END (css) === */
+
+/* page-specific */
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0; margin: 16px 0; border: 1px solid var(--line-strong); }
+.pair > div { padding: 12px 14px; background: var(--surface); }
+.pair > div + div { border-left: 1px solid var(--line-strong); }
+@media (max-width: 560px) { .pair > div + div { border-left: 0; border-top: 1px solid var(--line-strong); } }
+.pair h3 { margin: 0 0 6px; font: 600 .78rem/1.2 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.pair p { margin: 0 0 8px; font-size: 1rem; }
+.memory-line { font-weight: 600; font-size: 1.1em; border-top: 2px solid var(--accent); padding-top: 8px; }
+.pitch p { margin: 0 0 10px; }
+.pitch b { color: var(--accent); }
+dl.vocab dt { font-weight: 600; margin-top: 14px; }
+dl.vocab dd { margin: 2px 0 0; }
+/* level 2 additions (after KIT END): tables, ascii blocks, svg side notes. Tokens only. */
+.tblwrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table.tbl { width: 100%; border-collapse: collapse; font-size: .9375rem; line-height: 1.45; }
+table.tbl th { text-align: left; font: 600 .78rem/1.2 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); padding: 8px 10px; border-bottom: 1px solid var(--line-strong); }
+table.tbl td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.tbl tr:last-child td { border-bottom: 0; }
+pre.ascii { font: 400 .84rem/1.45 var(--font-mono); background: var(--code-bg); color: var(--ink); padding: 12px 14px; border-radius: 6px; overflow-x: auto; margin: 12px 0; }
+.stepper svg .side { fill: var(--warn); font: 600 10.5px var(--font-body); }
+.stepper svg { max-width: 504px; }
+.stepper svg .ttl { font-size: 13px; } /* SVG user units: scale with the diagram, not the text-size control */
+.stepper svg .tip { fill: var(--line-strong); }
+.stepper svg .path { fill: none; stroke: var(--line-strong); stroke-width: 2; }
+</style>
+<noscript><style>.answer[hidden] { display: block; } .card .show { display: none; } .rate { display: none; } .stepper { display: none; }</style></noscript>
+</head>
+<body data-course="snip-l1">
+<script>/* KIT: restore text size before first paint */
+try { var tbz = window.localStorage.getItem('tb.fontsize'); if (/^(75|81\.25|87\.5|93\.75|100|106\.25|112\.5|125)%$/.test(tbz)) document.documentElement.style.fontSize = tbz; } catch (e) { /* storage blocked */ }
+</script>
+<div class="page">
+
+<nav class="rail" aria-label="Sections">
+  <p class="rail-title">Level 1 sections</p>
+  <ol>
+    <li><a href="#s1" data-for="s1"><span class="tick" aria-hidden="true"></span><span class="rl">1 What snip does</span><span class="rm">2 min</span></a></li>
+    <li><a href="#s2" data-for="s2"><span class="tick" aria-hidden="true"></span><span class="rl">2 One short link, four steps</span><span class="rm">3 min</span></a></li>
+    <li><a href="#s3" data-for="s3"><span class="tick" aria-hidden="true"></span><span class="rl">3 Say it out loud</span><span class="rm">2 min</span></a></li>
+    <li><a href="#key" data-for="key"><span class="tick" aria-hidden="true"></span><span class="rl">Answer key</span><span class="rm"></span></a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="top">
+  <div class="ctl">
+    <span class="size-ctl" id="size-ctl" role="group" aria-label="Text size" hidden>
+      <button type="button" id="size-down" aria-label="Smaller text">A&minus;</button>
+      <button type="button" id="size-reset" aria-label="Default text size">A</button>
+      <button type="button" id="size-up" aria-label="Larger text">A+</button>
+      <span class="size-now" id="size-now" aria-live="polite"></span>
+    </span>
+    <button type="button" class="theme-btn" id="theme-btn" hidden>Theme: auto</button>
+  </div>
+  <p class="kicker">snip, Level 1</p>
+  <h1>Pitch your tool to a non-engineer</h1>
+  <p class="lede">You built snip, a tiny URL shortener. This page is a demo of the teach-back page kit: every component appears once, with fictional content. Answer each bet before you open it.</p>
+  <p class="meta">Source tags: paths are relative to the demo code in <code class="src">kit/demo</code>. Era tags mark when a number was true, for example <span class="era">E1</span> for the first release. This page is a demo, so it has no real eras.</p>
+  <p class="next-action">Next action: start section 1. About 7 minutes in total with the reveals.</p>
+  <p class="progress" id="progress">3 sections, about 7 min.</p>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+
+  <details class="words" open>
+    <summary>Words you will meet (skip if you know them)</summary>
+    <div class="words-grid">
+      <div><b>short code</b>The six characters after the domain, such as <code class="cmd">a1b2c3</code>.</div>
+      <div><b>long URL</b>The original address that a short code points to.</div>
+      <div><b>redirect</b>An answer that tells the browser to go to another address.</div>
+      <div><b>store</b>The file that keeps every code and its long URL.</div>
+    </div>
+  </details>
+</header>
+
+<section class="sec" id="s1" data-sec="s1" data-min="2">
+  <div class="sec-head"><span class="num">1</span><h2>What snip does</h2><span class="tick" aria-hidden="true"></span></div>
+
+  <div class="card predict" data-card="s1p">
+    <span class="label">Bet first</span>
+    <p class="q">Someone pastes a very long link into snip. In one line: what do they get back, and what happens when a friend opens it?</p>
+    <label class="sr" for="s1p-t">Your answer</label>
+    <textarea id="s1p-t" class="mine" placeholder="Write your guess in one line."></textarea>
+    <p class="last" hidden></p>
+    <button type="button" class="show" disabled>Show answer</button>
+    <div class="answer" hidden>
+      <p class="echo"></p>
+      <div class="ans-body"><p>They get a short link with a six-character code. When a friend opens it, snip looks the code up and sends the browser on to the long URL <code class="src">src/snip/store.py:37</code>.</p></div>
+      <div class="rate"><button type="button" data-rate="got" aria-pressed="false">Got it</button><button type="button" data-rate="missed" class="ghost" aria-pressed="false">Missed it</button></div>
+    </div>
+  </div>
+
+  <p>That is the whole product. A <span class="term" tabindex="0" role="button" aria-expanded="false">redirect<span class="def"> (a reply that says "the page you want lives at this other address")</span></span> does the last step. The rest of snip exists to make the code and to remember it.</p>
+  <p class="memory-line">Make a code, remember it, look it up.</p>
+  <p class="next"><b>Open question:</b> snip must remember a code between two visits. Where does it keep it, and what stops two links from sharing one code? Section 2 answers.</p>
+</section>
+
+<section class="sec" id="s2" data-sec="s2" data-min="3">
+  <div class="sec-head"><span class="num">2</span><h2>One short link, four steps</h2><span class="tick" aria-hidden="true"></span></div>
+
+  <div class="card predict" data-card="s2p">
+    <span class="label">Bet first</span>
+    <fieldset class="picks">
+      <legend class="q">When snip saves a new link and the random code already exists, what does it do?</legend>
+      <label><input type="radio" name="s2p" value="It overwrites the old link"><span>It overwrites the old link</span></label>
+      <label><input type="radio" name="s2p" value="It picks a new random code"><span>It picks a new random code</span></label>
+      <label><input type="radio" name="s2p" value="It returns an error"><span>It returns an error</span></label>
+    </fieldset>
+    <p class="last" hidden></p>
+    <button type="button" class="show" disabled>Show answer</button>
+    <div class="answer" hidden>
+      <p class="echo"></p>
+      <div class="ans-body"><p>It picks a new random code, again and again, until the code is free <code class="src">src/snip/store.py:44</code>. Only then does it store the long URL under that code <code class="src">src/snip/store.py:46</code>.</p></div>
+      <div class="rate"><button type="button" data-rate="got" aria-pressed="false">Got it</button><button type="button" data-rate="missed" class="ghost" aria-pressed="false">Missed it</button></div>
+    </div>
+  </div>
+
+  <p>Press Next to walk one save, one box at a time. Each box matches one step in the list below it.</p>
+
+  <div class="pipeline">
+    <div class="stepper" hidden>
+      <svg viewBox="0 0 504 76" role="img" aria-label="The save flow: receive, read, code, write"><g class="step" data-step="0"><rect class="box" x="2" y="6" width="114" height="58" rx="6"/><circle class="badge" cx="18" cy="22" r="11"/><text class="bnum" x="18" y="26">1</text><text class="ttl" x="34" y="27">RECEIVE</text><text class="sub" x="10" y="44">the long</text><text class="sub" x="10" y="57">URL</text></g><line class="link" x1="118" y1="35" x2="130" y2="35"/><polygon class="tip" points="128,31 132,35 128,39"/><g class="step" data-step="1"><rect class="box" x="130" y="6" width="114" height="58" rx="6"/><circle class="badge" cx="146" cy="22" r="11"/><text class="bnum" x="146" y="26">2</text><text class="ttl" x="162" y="27">READ</text><text class="sub" x="138" y="44">load the</text><text class="sub" x="138" y="57">table</text></g><line class="link" x1="246" y1="35" x2="258" y2="35"/><polygon class="tip" points="256,31 260,35 256,39"/><g class="step" data-step="2"><rect class="box" x="258" y="6" width="114" height="58" rx="6"/><circle class="badge" cx="274" cy="22" r="11"/><text class="bnum" x="274" y="26">3</text><text class="ttl" x="290" y="27">CODE</text><text class="sub" x="266" y="44">pick a free</text><text class="sub" x="266" y="57">code</text></g><line class="link" x1="374" y1="35" x2="386" y2="35"/><polygon class="tip" points="384,31 388,35 384,39"/><g class="step" data-step="3"><rect class="box" x="386" y="6" width="114" height="58" rx="6"/><circle class="badge" cx="402" cy="22" r="11"/><text class="bnum" x="402" y="26">4</text><text class="ttl" x="418" y="27">WRITE</text><text class="sub" x="394" y="44">save the</text><text class="sub" x="394" y="57">table</text></g></svg>
+      <p class="count" aria-live="polite"></p>
+      <div class="cap" aria-live="polite"></div>
+      <div class="controls">
+        <button type="button" data-act="back" class="ghost">Back</button>
+        <button type="button" data-act="next">Next</button>
+        <button type="button" data-act="all" class="ghost" aria-expanded="false">Show all steps</button>
+      </div>
+    </div>
+
+    <ol class="steps">
+      <li><b>Step 1, RECEIVE: the long URL arrives.</b> The caller passes one long URL to <code class="cmd">save</code> <code class="src">src/snip/store.py:40</code></li>
+      <li><b>Step 2, READ: load the table.</b> The whole table is read from one file. A missing file counts as an empty table <code class="src">src/snip/store.py:42</code> <code class="src">src/snip/store.py:18</code></li>
+      <li><b>Step 3, CODE: pick a free code.</b> A code has 6 characters from lowercase letters and digits. If it is taken, snip picks again <code class="src">src/snip/store.py:12</code> <code class="src">src/snip/store.py:44</code></li>
+      <li><b>Step 4, WRITE: save the table.</b> The long URL goes in under the code, and the whole table is written back <code class="src">src/snip/store.py:46</code> <code class="src">src/snip/store.py:47</code></li>
+    </ol>
+  </div>
+
+  <div class="card why" data-card="s2w">
+    <span class="label">Why?</span>
+    <p class="q">snip writes the whole table back on every save. Work out one cost of that choice and one thing it keeps simple.</p>
+    <label class="sr" for="s2w-t">Your answer</label>
+    <textarea id="s2w-t" class="mine" placeholder="Think about size, and about how many writers there are."></textarea>
+    <p class="last" hidden></p>
+    <button type="button" class="show" disabled>Show answer</button>
+    <div class="answer" hidden>
+      <p class="echo"></p>
+      <div class="ans-body"><p>The cost: every save rewrites the whole file, so it slows down as the table grows <code class="src">src/snip/store.py:26</code>. The gain: there is one file and no database to run. The code comment says it assumes one writer at a time <code class="src">src/snip/store.py:25</code>.</p></div>
+      <div class="rate"><button type="button" data-rate="got" aria-pressed="false">Got it</button><button type="button" data-rate="missed" class="ghost" aria-pressed="false">Missed it</button></div>
+    </div>
+  </div>
+
+  <div class="priv"><p><b>[PRIVATE-ONLY]</b> A private box holds material that must not be said aloud or published, such as a work project name or an internal number. Say only the public-safe version: "I kept storage to one file so there was nothing to run."</p></div>
+
+  <p class="next"><b>Open question:</b> you can now explain the four steps. Can you say the whole pitch to a friend in about 30 seconds? Section 3 asks you to try.</p>
+</section>
+
+<section class="sec" id="s3" data-sec="s3" data-min="2">
+  <div class="sec-head"><span class="num">3</span><h2>Say it out loud</h2><span class="tick" aria-hidden="true"></span></div>
+
+  <div class="card say" data-card="s3s">
+    <span class="label">Say this</span>
+    <div class="say-body"><p class="q">Out loud, in about 30 seconds: what is snip, and how does it avoid giving two links the same code? Type your version first.</p>
+    <label class="sr" for="s3s-t">Your answer</label>
+    <textarea id="s3s-t" class="mine" placeholder="Write what you would say."></textarea>
+    <p class="last" hidden></p>
+    <button type="button" class="show" disabled>Show the model answer</button>
+    <div class="answer" hidden>
+      <p class="echo"></p>
+      <div class="ans-body"><p>"snip turns a long web address into a short one. When you save a link, it makes a random six-character code. If that code is already taken, it makes another one until it finds a free one, so two links never share a code <code class="src">src/snip/store.py:44</code>. When someone opens the short link, snip looks the code up and sends them to the original address <code class="src">src/snip/store.py:37</code>."</p></div>
+      <div class="rate"><button type="button" data-rate="got" aria-pressed="false">Got it</button><button type="button" data-rate="missed" class="ghost" aria-pressed="false">Missed it</button></div>
+    </div>
+    </div>
+  </div>
+
+  <h3>How to keep this in memory</h3>
+  <p>Close this page. Tomorrow, redo the cards from memory before you open any answer. Do it again in three days, then in a week. It feels harder than rereading. That difficulty is what builds the memory.</p>
+  <p class="next"><b>Next action (2 min):</b> say the model answer aloud once, without looking.</p>
+</section>
+
+<section class="sec" id="key" data-sec="key" data-min="0" data-nocount="1">
+  <div class="sec-head"><span class="num">Key</span><h2>Answer key</h2></div>
+  <p>Use this after you have answered. Every card above is listed here in order.</p>
+  <details class="key">
+    <summary>Open the full answer key</summary>
+    <div class="key-body">
+      <h3>Section 1</h3>
+      <p><b>Bet.</b> A short link with a six-character code. Opening it looks the code up and redirects to the long URL <code class="src">src/snip/store.py:37</code>.</p>
+      <h3>Section 2</h3>
+      <p><b>Bet.</b> It picks a new random code until the code is free <code class="src">src/snip/store.py:44</code>.</p>
+      <p><b>Why.</b> Cost: each save rewrites the whole file. Gain: one file, no database, one writer at a time <code class="src">src/snip/store.py:25</code> <code class="src">src/snip/store.py:26</code>.</p>
+      <h3>Section 3</h3>
+      <p><b>Say this.</b> Make a random code, re-roll while it is taken, store it next to the long URL, and look it up on open <code class="src">src/snip/store.py:44</code> <code class="src">src/snip/store.py:46</code> <code class="src">src/snip/store.py:37</code>.</p>
+    </div>
+  </details>
+  <p class="next"><b>Next action (2 min):</b> say the pitch aloud once more.</p>
+</section>
+
+</main>
+</div>
+
+<script>
+/* === KIT START (js) === */
+(function () {
+  'use strict';
+  var root = document.documentElement;
+  root.classList.add('js');
+  var course = (document.body.getAttribute('data-course') || 'course');
+  var PFX = 'tb.' + course + '.';
+  function get(k) { try { return window.localStorage.getItem(PFX + k); } catch (e) { return null; } }
+  function set(k, v) { try { window.localStorage.setItem(PFX + k, v); } catch (e) { /* storage blocked: page still works */ } }
+  function qsa(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+
+  /* theme toggle: auto, light, dark */
+  (function () {
+    var btn = document.getElementById('theme-btn');
+    var saved = null;
+    try { saved = window.localStorage.getItem('tb.theme'); } catch (e) { saved = null; }
+    if (saved === 'light' || saved === 'dark') root.setAttribute('data-theme', saved);
+    if (!btn) return;
+    function label() { btn.textContent = 'Theme: ' + (root.getAttribute('data-theme') || 'auto'); }
+    btn.hidden = false; label();
+    btn.addEventListener('click', function () {
+      var cur = root.getAttribute('data-theme');
+      var next = cur === null ? 'light' : (cur === 'light' ? 'dark' : null);
+      if (next) root.setAttribute('data-theme', next); else root.removeAttribute('data-theme');
+      try { if (next) window.localStorage.setItem('tb.theme', next); else window.localStorage.removeItem('tb.theme'); } catch (e) { /* ignore */ }
+      label();
+    });
+  })();
+
+  /* text size: A-, A, A+ steps on the root font size; default is the browser's own size */
+  (function () {
+    var STEPS = [75, 81.25, 87.5, 93.75, 100, 106.25, 112.5, 125];
+    var box = document.getElementById('size-ctl');
+    if (!box) return;
+    var down = document.getElementById('size-down'), reset = document.getElementById('size-reset'),
+        up = document.getElementById('size-up'), now = document.getElementById('size-now');
+    var idx = 4;
+    try {
+      var saved = parseFloat(window.localStorage.getItem('tb.fontsize'));
+      var f = STEPS.indexOf(saved); if (f > -1) idx = f;
+    } catch (e) { /* storage blocked */ }
+    function apply(save) {
+      var pct = STEPS[idx];
+      root.style.fontSize = pct + '%';
+      now.textContent = Math.round(16 * pct / 100 * 10) / 10 + 'px text';
+      down.disabled = idx === 0; up.disabled = idx === STEPS.length - 1;
+      if (save) { try { window.localStorage.setItem('tb.fontsize', pct + '%'); } catch (e) { /* ignore */ } }
+    }
+    down.addEventListener('click', function () { if (idx > 0) { idx--; apply(true); } });
+    up.addEventListener('click', function () { if (idx < STEPS.length - 1) { idx++; apply(true); } });
+    reset.addEventListener('click', function () { idx = 4; apply(true); });
+    box.hidden = false; apply(false);
+  })();
+
+  /* inline terms: tap to show the bracketed definition */
+  qsa('.term').forEach(function (t) {
+    function toggle() {
+      var open = t.classList.toggle('open');
+      t.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    t.addEventListener('click', toggle);
+    t.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
+
+  /* progress and ticks */
+  var sections = qsa('.sec[data-sec]');
+  var barEl = document.getElementById('bar');
+  var progEl = document.getElementById('progress');
+  function secDone(sec) {
+    if (sec.getAttribute('data-nocount')) return false;
+    if (sec.getAttribute('data-manual')) return get('sec.' + sec.id) === '1';
+    var cards = qsa('.card[data-card]', sec);
+    if (!cards.length) return false;
+    return cards.every(function (c) { return c.hasAttribute('data-done'); });
+  }
+  function refresh() {
+    var counted = sections.filter(function (s) { return !s.getAttribute('data-nocount'); });
+    var done = 0, left = 0;
+    counted.forEach(function (s) {
+      var d = secDone(s);
+      s.classList.toggle('is-done', d);
+      var head = s.querySelector('.sec-head');
+      if (head) head.classList.toggle('is-done', d);
+      var link = document.querySelector('.rail a[data-for="' + s.id + '"]');
+      if (link) link.classList.toggle('is-done', d);
+      if (d) done++; else left += parseInt(s.getAttribute('data-min') || '0', 10);
+    });
+    if (progEl) {
+      if (done === counted.length) progEl.textContent = 'Done. Come back tomorrow and redo the five checks from memory.';
+      else progEl.textContent = done + ' of ' + counted.length + ' sections done, about ' + left + ' min left.';
+    }
+    if (barEl) barEl.style.width = Math.round(100 * done / counted.length) + '%';
+  }
+
+  /* predict, why and say cards: commit first, then reveal */
+  qsa('.card[data-card]').forEach(function (card) {
+    var id = card.getAttribute('data-card');
+    var ta = card.querySelector('textarea.mine');
+    var picks = qsa('input[type=radio]', card);
+    var show = card.querySelector('.show');
+    var ans = card.querySelector('.answer');
+    var echo = card.querySelector('.echo');
+    var last = card.querySelector('.last');
+    var prev = get('mine.' + id);
+    var d = get('done.' + id);
+    if (d) card.setAttribute('data-done', d);
+    if (prev && last) { last.textContent = 'Last time you wrote: ' + prev; last.hidden = false; }
+    function mine() {
+      if (ta) return ta.value.trim();
+      for (var i = 0; i < picks.length; i++) {
+        if (picks[i].checked) return picks[i].value;
+      }
+      return '';
+    }
+    function sync() { show.disabled = mine().length < 3; }
+    if (ta) ta.addEventListener('input', sync);
+    picks.forEach(function (p) { p.addEventListener('change', sync); });
+    sync();
+    show.addEventListener('click', function () {
+      var m = mine();
+      if (m.length < 3) return;
+      echo.textContent = '';
+      var b = document.createElement('b'); b.textContent = 'Your answer: ';
+      echo.appendChild(b); echo.appendChild(document.createTextNode(m));
+      ans.hidden = false;
+      show.hidden = true;
+      set('mine.' + id, m);
+      var first = ans.querySelector('.rate button');
+      if (first) first.focus();
+    });
+    qsa('.rate button', card).forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var v = btn.getAttribute('data-rate');
+        qsa('.rate button', card).forEach(function (o) { o.setAttribute('aria-pressed', o === btn ? 'true' : 'false'); });
+        card.setAttribute('data-done', v);
+        set('done.' + id, v);
+        refresh();
+      });
+    });
+  });
+
+  /* manual tick for reference sections */
+  qsa('.btn.mark').forEach(function (b) {
+    var sec = b.closest('.sec');
+    b.hidden = false;
+    function label() { b.textContent = get('sec.' + sec.id) === '1' ? 'Marked as read. Tap to undo.' : 'Mark vocabulary as read'; }
+    label();
+    b.addEventListener('click', function () {
+      set('sec.' + sec.id, get('sec.' + sec.id) === '1' ? '0' : '1');
+      label(); refresh();
+    });
+  });
+
+  /* step-through pipeline */
+  qsa('.pipeline').forEach(function (pl) {
+    var sp = pl.querySelector('.stepper');
+    var list = pl.querySelector('.steps');
+    if (!sp || !list) return;
+    var items = qsa('li', list);
+    var groups = qsa('svg g.step', sp);
+    var cap = sp.querySelector('.cap');
+    var count = sp.querySelector('.count');
+    var back = sp.querySelector('[data-act=back]');
+    var next = sp.querySelector('[data-act=next]');
+    var all = sp.querySelector('[data-act=all]');
+    var i = 0;
+    function render() {
+      groups.forEach(function (g, k) { g.classList.toggle('on', k === i); });
+      cap.innerHTML = items[i].innerHTML;
+      count.textContent = 'Step ' + (i + 1) + ' of ' + items.length;
+      back.disabled = (i === 0);
+      next.disabled = (i === items.length - 1);
+    }
+    back.addEventListener('click', function () { if (i > 0) { i--; render(); } });
+    next.addEventListener('click', function () { if (i < items.length - 1) { i++; render(); } });
+    all.addEventListener('click', function () {
+      var on = pl.classList.toggle('show-all');
+      all.setAttribute('aria-expanded', on ? 'true' : 'false');
+      all.textContent = on ? 'Hide the list' : 'Show all steps';
+    });
+    sp.hidden = false;
+    pl.classList.add('stepping');
+    render();
+  });
+
+  /* rail: mark the section in view */
+  var links = qsa('.rail a[data-for]');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          links.forEach(function (l) {
+            if (l.getAttribute('data-for') === en.target.id) l.setAttribute('aria-current', 'true');
+            else l.removeAttribute('aria-current');
+          });
+        }
+      });
+    }, { rootMargin: '-15% 0px -75% 0px' });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+
+  refresh();
+})();
+/* === KIT END (js) === */
+</script>
+</body>
+</html>

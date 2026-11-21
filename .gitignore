@@ -1,0 +1,9 @@
+# Private inputs and records: never public
+VISION.md
+KICKOFF-PROMPT.md
+conversations/
+decisions.md
+docs/media/ABOUT-IMAGE.md
+docs/media/hero-glass.jpg
+.DS_Store
+__pycache__/
