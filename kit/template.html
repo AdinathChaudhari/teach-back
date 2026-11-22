@@ -291,6 +291,37 @@ code.src { background: none; border: 0; padding: 0; margin: 0 .3em 0 0; }
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 /* no-JS fallback: answers readable, buttons removed */
+/* layout v2 */
+:root { --tb-base: 106.25%; --measure: 34rem; --rail-w: 13rem; --rail-gap: 2.5rem; --edge: 1.5rem; --bleed-max: 12rem; }
+html { font-size: calc(var(--tb-scale, 1) * var(--tb-base)); }
+@media (max-width: 860px) { :root { --tb-base: 100%; --measure: 32rem; } }
+@media (min-width: 861px) {
+  .page {
+    grid-template-columns:
+      minmax(calc(var(--edge) + var(--rail-w) + var(--rail-gap)), 1fr)
+      minmax(0, var(--measure))
+      minmax(var(--edge), 1fr);
+    column-gap: 0; max-width: none; margin: 0; padding: 0;
+    container-type: inline-size;
+  }
+  .rail { justify-self: start; width: var(--rail-w); margin-left: max(var(--edge), env(safe-area-inset-left, 0px)); }
+  main {
+    max-width: none;
+    --bleed: clamp(0rem, (100cqi - var(--measure)) / 2 - var(--edge) - var(--rail-w) - var(--rail-gap), var(--bleed-max));
+  }
+  .sec > .tblwrap, .sec > pre.ascii { margin-inline: calc(-1 * var(--bleed)); }
+}
+/* stepper goes wide only when diagram and caption fit side by side; otherwise it stays in the column */
+@container (min-width: 90rem) {
+  .sec > .pipeline > .stepper { margin-inline: calc(-1 * var(--bleed)); }
+  .sec > .pipeline > .stepper:not([hidden]) {
+    display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-rows: auto 1fr auto;
+    column-gap: 2rem; align-items: start; padding: 1rem 1.25rem;
+  }
+  .sec > .pipeline > .stepper > svg { grid-row: 1 / span 3; max-width: none; margin: 0; }
+}
+@media (min-width: 861px) and (max-width: 1199px) { :root { --rail-w: 11.5rem; --rail-gap: 2rem; --edge: 1rem; } }
+@media (min-width: 1600px) { :root { --rail-w: 14rem; --rail-gap: 3rem; --edge: 2rem; } }
 /* === KIT END (css) === */
 
 /* page-specific */
@@ -322,7 +353,7 @@ pre.ascii { font: 400 .84rem/1.45 var(--font-mono); background: var(--code-bg); 
 </head>
 <body data-course="snip-l1">
 <script>/* KIT: restore text size before first paint */
-try { var tbz = window.localStorage.getItem('tb.fontsize'); if (/^(75|81\.25|87\.5|93\.75|100|106\.25|112\.5|125)%$/.test(tbz)) document.documentElement.style.fontSize = tbz; } catch (e) { /* storage blocked */ }
+try { var tbz = window.localStorage.getItem('tb.fontsize'); if (/^(75|81\.25|87\.5|93\.75|100|106\.25|112\.5|125)%$/.test(tbz)) document.documentElement.style.setProperty('--tb-scale', parseFloat(tbz) / 100); } catch (e) { /* storage blocked */ }
 </script>
 <div class="page">
 
@@ -537,8 +568,8 @@ try { var tbz = window.localStorage.getItem('tb.fontsize'); if (/^(75|81\.25|87\
     } catch (e) { /* storage blocked */ }
     function apply(save) {
       var pct = STEPS[idx];
-      root.style.fontSize = pct + '%';
-      now.textContent = Math.round(16 * pct / 100 * 10) / 10 + 'px text';
+      root.style.setProperty('--tb-scale', pct / 100);
+      now.textContent = Math.round(parseFloat(getComputedStyle(root).fontSize) * 10) / 10 + 'px text';
       down.disabled = idx === 0; up.disabled = idx === STEPS.length - 1;
       if (save) { try { window.localStorage.setItem('tb.fontsize', pct + '%'); } catch (e) { /* ignore */ } }
     }

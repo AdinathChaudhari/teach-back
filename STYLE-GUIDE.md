@@ -50,6 +50,7 @@ Tick each line. One fail means the page goes back.
 - **Design:** warm paper background in light mode, warm charcoal in dark mode. Cards are one step lighter than the page. One teal accent for "your turn", amber for private, green for done. Open questions are plain lines, not callouts. Citation chips are quiet footnote text. The working example is `kit/template.html`.
 - **Type:** Avenir Next for body and headings (a system font on macOS and iOS; no web fonts). Monospace only for code and file paths. Weights 400 and 600, with 700 for the page title only. Measure about 32em.
 - **Size:** every font size is in rem, from the browser default (body 1rem). An A−/A/A+ control steps from 75% to 125% and is saved per browser. Text in SVG diagrams uses px (SVG user units), so diagrams scale as a whole and labels never overflow. Text boxes never go below 16px, so iOS does not zoom.
+- **Layout (v2):** on screens wider than 860px the section index sits on the left edge of the window and the reading column is centred in the window, as in a browser's reader view. Text stays left-aligned at a fixed 17px base, about 65 to 70 characters per line (34rem). Wide tables and ASCII blocks bleed evenly on both sides of the column, never into the index. The A−/A/A+ control multiplies the base through `--tb-scale`. Phones keep the top-bar index at 16px. `scripts/patch_layout.py` upgrades older pages.
 - **Kit:** copy the KIT START / KIT END blocks unchanged between pages. Add new components only after KIT END, built from existing tokens.
 
 ## Sources

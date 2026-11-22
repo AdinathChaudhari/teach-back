@@ -61,6 +61,8 @@ Cost rule: workers and verifiers run on the mid model. The strong model plans on
 
 Use the briefs in `{{TEACHBACK}}/prompts/`. Fill the placeholders when you send each one. Save every filled brief to `{{OUT_DIR}}/run/` before sending it.
 
+Once you trust the method, `{{TEACHBACK}}/prompts/workflow-course.js` runs this whole step for one or more courses as a Claude Code Workflow, with no gates. You still audit the result on disk afterwards: compare each ledger to its control, re-run the checkers, and spot-check fixes in the code.
+
 1. **Plan.** Send `01-planner.md` to the strong model. Save its plan verbatim. Audit it: do the cited paths exist, do 5 spot-checked line claims match? **GATE 1:** show the user the module list and level outlines. Wait for a yes.
 2. **Test run (no cost).** Send `07-test-runner.md` to a mid-model agent. It runs the project's tests and any offline checks on a scratch copy and reports exact output. Re-run one claimed result yourself.
 3. **Draft the levels.** Send `03-level-worker.md` once per level (LEVEL = 1, 2, 3, 4), each with `02-shared-rules.md`. Levels 1 and 2 can run in parallel. Level 3 follows the numbers from step 2. Level 4 reads the three verified levels, so it goes last. Copy each draft to `run/controls/` when it lands.
