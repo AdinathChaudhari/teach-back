@@ -24,6 +24,8 @@ Social preview: docs/media/hero-glass.jpg (1280x640, git-ignored) made from docs
 | **Catch a page that drifted from its ledger** | [`scripts/check_drift.py`](scripts/check_drift.py) | Numbers and "you did X" sentences the ledger does not back |
 | **Prove every reveal card opens** | [`scripts/reveal_test.sh`](scripts/reveal_test.sh) | Headless Chrome clicks every card and counts what stays hidden |
 | **Write the rules for a page** | [`STYLE-GUIDE.md`](STYLE-GUIDE.md) | Ten rules and a pass/fail checklist, tied to published research |
+| **Build several courses unattended** | [`prompts/workflow-course.js`](prompts/workflow-course.js) | A Claude Code Workflow script that chains every brief, with no gates |
+| **Upgrade older pages to the current layout** | [`scripts/patch_layout.py`](scripts/patch_layout.py) | Index on the left edge, reading column centred, fixed 17px text |
 
 ## Quick start
 
